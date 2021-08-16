@@ -55,7 +55,7 @@ describe("tests", async () => {
     const amount = '1000'
     let balance1 = await token.balanceOf(owner.address);
     const expectedBalance = new BigNumber(balance1.toString()).minus(amount).toString()
-    await bridge.swap(owner.address, 'ACDM', amount, '0')
+    await bridge.swap(owner.address, 'ACDM', amount, '0', '1', '0')
     let balance2 = await token.balanceOf(owner.address);
     expect(expectedBalance).to.equal(balance2.toString());
   });

@@ -44,6 +44,8 @@ contract Bridge is AccessControl {
         address indexed recipient,
         uint256 amount,
         string symbol,
+        uint256 chainFrom,
+        uint256 chainTo,
         uint256 txId
     );
 
@@ -91,19 +93,38 @@ contract Bridge is AccessControl {
         emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
     }
 
-    function swap(address recipient, string memory symbol, uint256 amount, uint256 txId) external {
+    function swap(
+        address recipient,
+        string memory symbol,
+        uint256 amount,
+        uint256 chainFrom,
+        uint256 chainTo,
+        uint256 txId
+    ) external {
         address tokenAddress = tokenBySymbol[symbol].token;
         AcademyToken(tokenAddress).burn(msg.sender, amount);
         bytes32 hashedMsg = keccak256(abi.encodePacked(
+            msg.sender,
             recipient,
-            symbol,
             amount,
+            symbol,
+            chainFrom,
+            chainTo,
             txId
         ));
         swapByHash[hashedMsg] = Swap({
             nonce: txId,
             state: SwapState.SWAPPED
         });
-        emit SwapInitialized(block.timestamp, msg.sender, recipient, amount, symbol, txId);
+        emit SwapInitialized(
+            block.timestamp,
+            msg.sender,
+            recipient,
+            amount,
+            symbol,
+            chainFrom,
+            chainTo,
+            txId
+        );
     }
 }
