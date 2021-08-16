@@ -24,6 +24,7 @@ contract Bridge is AccessControl {
     }
 
     mapping(string => address) public tokenBySymbol;
+    string[] tokenSymbols;
     mapping(bytes32 => Swap) public swapByHash;
 
     event SwapInitialized(
@@ -40,8 +41,27 @@ contract Bridge is AccessControl {
         _setupRole(ADMIN_ROLE, msg.sender);
 //        _setupRole(VALIDATOR_ROLE, msg.sender);
     }
+
+    struct TokenInfo {
+        address token;
+        string symbol;
+    }
+
+    function getTokenList() external view returns (TokenInfo[] memory) {
+        TokenInfo[] memory tokens = new TokenInfo[](tokenSymbols.length);
+        for (uint i = 0; i < tokenSymbols.length; i++) {
+            string memory symbol = tokenSymbols[i];
+            tokens[i] = TokenInfo({
+                symbol: symbol,
+                token: tokenBySymbol[symbol]
+            });
+        }
+        return tokens;
+    }
+
     function addToken(string memory symbol, address tokenAddress) external {
         tokenBySymbol[symbol] = tokenAddress;
+        tokenSymbols.push(symbol);
     }
 
     function swap(address recipient, string memory tokenSymbol, uint256 amount, uint256 txId) external {

@@ -9,6 +9,7 @@ const BN = BigNumber;
 describe("tests", async () => {
 
   let token
+  let token1
   let bridge
 
 
@@ -18,7 +19,8 @@ describe("tests", async () => {
 
   it("deploy AcademyToken token", async () => {
     const Token = await ethers.getContractFactory("AcademyToken");
-    token = await Token.deploy();
+    token = await Token.deploy("Academy Token", "ACDM");
+    token1 = await Token.deploy("Academy Token 2", "ACDM2");
     await token.mint(owner.address, new BigNumber('10000000').shiftedBy(18).toString());
     let balance = await token.balanceOf(owner.address);
     let symbol = await token.symbol();
@@ -43,6 +45,7 @@ describe("tests", async () => {
     await token.grantRole(MINTER_ROLE, bridge.address)
     await token.grantRole(BURNER_ROLE, bridge.address)
     await bridge.addToken('ACDM', token.address);
+    await bridge.addToken('ACDM2', token1.address);
     const tokenAddress = await bridge.tokenBySymbol('ACDM');
     expect(token.address).to.equal(tokenAddress);
   });
@@ -55,5 +58,10 @@ describe("tests", async () => {
     await bridge.swap(owner.address, 'ACDM', amount, '0')
     let balance2 = await token.balanceOf(owner.address);
     expect(expectedBalance).to.equal(balance2.toString());
+  });
+
+  it("fetch token list", async () => {
+    const tokenList = await bridge.getTokenList()
+    expect('ACDM2').to.equal(tokenList[1].symbol);
   });
 });
