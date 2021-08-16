@@ -60,13 +60,13 @@ contract Bridge is AccessControl {
     }
 
     function addToken(string memory symbol, address tokenAddress) external {
+        require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
         tokenBySymbol[symbol] = tokenAddress;
         tokenSymbols.push(symbol);
     }
 
     function swap(address recipient, string memory tokenSymbol, uint256 amount, uint256 txId) external {
         address tokenAddress = tokenBySymbol[tokenSymbol];
-//        AcademyToken(tokenAddress).safeTransferFrom(msg.sender, address(this), amount);
         AcademyToken(tokenAddress).burn(msg.sender, amount);
         bytes32 hashedMsg = keccak256(abi.encodePacked(
             recipient,
