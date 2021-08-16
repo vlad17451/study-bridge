@@ -47,7 +47,7 @@ describe("tests", async () => {
     await bridge.addToken('ACDM', token.address);
     await bridge.addToken('ACDM2', token1.address);
     const tokenAddress = await bridge.tokenBySymbol('ACDM');
-    expect(token.address).to.equal(tokenAddress);
+    expect(token.address).to.equal(tokenAddress.token);
   });
 
   it("swap", async () => {
@@ -63,5 +63,11 @@ describe("tests", async () => {
   it("fetch token list", async () => {
     const tokenList = await bridge.getTokenList()
     expect('ACDM2').to.equal(tokenList[1].symbol);
+  });
+
+  it("deactivate token", async () => {
+    await bridge.deactivateTokenBySymbol('ACDM2')
+    const tokenList = await bridge.getTokenList()
+    expect('1').to.equal(tokenList[1].state.toString());
   });
 });

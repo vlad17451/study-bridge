@@ -23,7 +23,18 @@ contract Bridge is AccessControl {
         SwapState state;
     }
 
-    mapping(string => address) public tokenBySymbol;
+    enum TokenState {
+        ACTIVE,
+        INACTIVE
+    }
+
+    struct TokenInfo {
+        address token;
+        string symbol;
+        TokenState state;
+    }
+
+    mapping(string => TokenInfo) public tokenBySymbol;
     string[] tokenSymbols;
     mapping(bytes32 => Swap) public swapByHash;
 
@@ -36,41 +47,56 @@ contract Bridge is AccessControl {
         uint256 txId
     );
 
+    event TokenStateChanged(
+        address indexed initiator,
+        address indexed token,
+        string indexed symbol,
+        TokenState newState
+    );
+
     constructor () {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
-//        _setupRole(VALIDATOR_ROLE, msg.sender);
-    }
-
-    struct TokenInfo {
-        address token;
-        string symbol;
     }
 
     function getTokenList() external view returns (TokenInfo[] memory) {
         TokenInfo[] memory tokens = new TokenInfo[](tokenSymbols.length);
         for (uint i = 0; i < tokenSymbols.length; i++) {
-            string memory symbol = tokenSymbols[i];
-            tokens[i] = TokenInfo({
-                symbol: symbol,
-                token: tokenBySymbol[symbol]
-            });
+            tokens[i] = tokenBySymbol[tokenSymbols[i]];
         }
         return tokens;
     }
 
     function addToken(string memory symbol, address tokenAddress) external {
         require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
-        tokenBySymbol[symbol] = tokenAddress;
+        tokenBySymbol[symbol] = TokenInfo({
+            token: tokenAddress,
+            symbol: symbol,
+            state: TokenState.ACTIVE
+        });
         tokenSymbols.push(symbol);
     }
 
-    function swap(address recipient, string memory tokenSymbol, uint256 amount, uint256 txId) external {
-        address tokenAddress = tokenBySymbol[tokenSymbol];
+    function deactivateTokenBySymbol(string memory symbol) external {
+        require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
+        TokenInfo storage token = tokenBySymbol[symbol];
+        token.state = TokenState.INACTIVE;
+        emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
+    }
+
+    function activateTokenBySymbol(string memory symbol) external {
+        require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
+        TokenInfo storage token = tokenBySymbol[symbol];
+        token.state = TokenState.ACTIVE;
+        emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
+    }
+
+    function swap(address recipient, string memory symbol, uint256 amount, uint256 txId) external {
+        address tokenAddress = tokenBySymbol[symbol].token;
         AcademyToken(tokenAddress).burn(msg.sender, amount);
         bytes32 hashedMsg = keccak256(abi.encodePacked(
             recipient,
-            tokenSymbol,
+            symbol,
             amount,
             txId
         ));
@@ -78,6 +104,6 @@ contract Bridge is AccessControl {
             nonce: txId,
             state: SwapState.SWAPPED
         });
-        emit SwapInitialized(block.timestamp, msg.sender, recipient, amount, tokenSymbol, txId);
+        emit SwapInitialized(block.timestamp, msg.sender, recipient, amount, symbol, txId);
     }
 }
