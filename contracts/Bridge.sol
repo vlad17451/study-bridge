@@ -101,8 +101,9 @@ contract Bridge is AccessControl {
         uint256 chainTo,
         uint256 txId
     ) external {
-        address tokenAddress = tokenBySymbol[symbol].token;
-        AcademyToken(tokenAddress).burn(msg.sender, amount);
+        TokenInfo memory token = tokenBySymbol[symbol];
+        require(token.state == TokenState.ACTIVE, 'Token is inactive');
+        AcademyToken(token.token).burn(msg.sender, amount);
         bytes32 hashedMsg = keccak256(abi.encodePacked(
             msg.sender,
             recipient,
