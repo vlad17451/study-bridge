@@ -1,7 +1,7 @@
 const { expect } = require("chai");
-const web3 = require("web3");
+const Web3 = require('web3');
+const web3 = new Web3(hre.network.provider);
 const BigNumber = require("bignumber.js")
-
 BigNumber.config({ EXPONENTIAL_AT: 60 });
 
 const BN = BigNumber;
@@ -14,7 +14,7 @@ describe("tests", async () => {
 
 
   beforeEach(async function () {
-    [owner, sponsor, trader] = await ethers.getSigners();
+    [owner, validator, user0] = await ethers.getSigners();
   });
 
   it("deploy AcademyToken token", async () => {
@@ -69,5 +69,38 @@ describe("tests", async () => {
     await bridge.deactivateTokenBySymbol('ACDM2')
     const tokenList = await bridge.getTokenList()
     expect('1').to.equal(tokenList[1].state.toString());
+  });
+
+  it("redeem", async () => {
+
+    const recipient = user0.address
+    const symbol = 'ACDM'
+    const amount = '30000'
+    const chainFrom = '1'
+    const chainTo = '2'
+    const txId = '123'
+    const message = web3.utils.soliditySha3(
+      { t: 'address', v: recipient },
+      { t: 'string', v: symbol },
+      { t: 'uint256', v: amount },
+      { t: 'uint256', v: chainFrom },
+      { t: 'uint256', v: chainTo },
+      { t: 'uint256', v: txId },
+    );
+
+
+    const signature = await web3.eth.sign(message, validator.address);
+    const { v, r, s }  = ethers.utils.splitSignature(signature)
+
+    console.log('address0: ', validator.address)
+
+    // console.log("Signature:")
+    // console.log("_v:", v);
+    // console.log("_r:", r);
+    // console.log("_s:", s);
+
+    await bridge.redeem(recipient, symbol, amount, chainFrom, chainTo, txId, v, r, s)
+
+
   });
 });

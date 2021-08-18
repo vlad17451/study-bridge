@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./AcademyToken.sol";
+import "hardhat/console.sol";
 
 contract Bridge is AccessControl {
     using SafeERC20 for IERC20;
@@ -127,5 +128,33 @@ contract Bridge is AccessControl {
             chainTo,
             txId
         );
+    }
+
+    function redeem(
+        address recipient,
+        string memory symbol,
+        uint256 amount,
+        uint256 chainFrom,
+        uint256 chainTo,
+        uint256 txId,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public view {
+
+        bytes32 hashStruct = keccak256(
+            abi.encode(
+                recipient,
+                symbol,
+                amount,
+                chainFrom,
+                chainTo,
+                txId
+            )
+        );
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hashStruct));
+        address validatorAddress = ecrecover(prefixedHash, v, r, s);
+        console.log('address1: ', validatorAddress);
     }
 }
