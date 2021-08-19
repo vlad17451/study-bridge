@@ -39,7 +39,7 @@ describe("tests", async () => {
     const Bridge = await ethers.getContractFactory("Bridge");
     bridge = await Bridge.deploy();
     const VALIDATOR_ROLE = await bridge.VALIDATOR_ROLE()
-    await bridge.grantRole(VALIDATOR_ROLE, owner.address)
+    await bridge.grantRole(VALIDATOR_ROLE, validator.address)
     const MINTER_ROLE = await token.BURNER_ROLE()
     const BURNER_ROLE = await token.BURNER_ROLE()
     await token.grantRole(MINTER_ROLE, bridge.address)
@@ -100,7 +100,5 @@ describe("tests", async () => {
     // console.log("_s:", s);
 
     await bridge.redeem(recipient, symbol, amount, chainFrom, chainTo, txId, v, r, s)
-
-
   });
 });

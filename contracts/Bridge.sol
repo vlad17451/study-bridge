@@ -105,8 +105,7 @@ contract Bridge is AccessControl {
         TokenInfo memory token = tokenBySymbol[symbol];
         require(token.state == TokenState.ACTIVE, 'Token is inactive');
         AcademyToken(token.token).burn(msg.sender, amount);
-        bytes32 hashedMsg = keccak256(abi.encodePacked(
-            msg.sender,
+        bytes32 hash = keccak256(abi.encodePacked(
             recipient,
             amount,
             symbol,
@@ -114,7 +113,7 @@ contract Bridge is AccessControl {
             chainTo,
             txId
         ));
-        swapByHash[hashedMsg] = Swap({
+        swapByHash[hash] = Swap({
             nonce: txId,
             state: SwapState.SWAPPED
         });
@@ -140,7 +139,7 @@ contract Bridge is AccessControl {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public view {
+    ) external {
 
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -156,5 +155,14 @@ contract Bridge is AccessControl {
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
         address validatorAddress = ecrecover(prefixedHash, v, r, s);
         console.log('address1: ', validatorAddress);
+        require(
+            hasRole(VALIDATOR_ROLE, validatorAddress),
+            "validator address is not correct"
+        );
+
+        swapByHash[hash] = Swap({
+            nonce: txId,
+            state: SwapState.REDEEMED
+        });
     }
 }
