@@ -142,8 +142,8 @@ contract Bridge is AccessControl {
         bytes32 s
     ) public view {
 
-        bytes32 hashStruct = keccak256(
-            abi.encode(
+        bytes32 hash = keccak256(
+            abi.encodePacked(
                 recipient,
                 symbol,
                 amount,
@@ -153,7 +153,7 @@ contract Bridge is AccessControl {
             )
         );
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hashStruct));
+        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
         address validatorAddress = ecrecover(prefixedHash, v, r, s);
         console.log('address1: ', validatorAddress);
     }
