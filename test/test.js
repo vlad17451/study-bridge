@@ -37,10 +37,10 @@ describe("tests", async () => {
 
   it("deploy Bridge and add token token", async () => {
     const Bridge = await ethers.getContractFactory("Bridge");
-    bridge = await Bridge.deploy();
+    bridge = await Bridge.deploy('1');
     const VALIDATOR_ROLE = await bridge.VALIDATOR_ROLE()
     await bridge.grantRole(VALIDATOR_ROLE, validator.address)
-    const MINTER_ROLE = await token.BURNER_ROLE()
+    const MINTER_ROLE = await token.MINTER_ROLE()
     const BURNER_ROLE = await token.BURNER_ROLE()
     await token.grantRole(MINTER_ROLE, bridge.address)
     await token.grantRole(BURNER_ROLE, bridge.address)
@@ -48,6 +48,11 @@ describe("tests", async () => {
     await bridge.addToken('ACDM2', token1.address);
     const tokenAddress = await bridge.tokenBySymbol('ACDM');
     expect(token.address).to.equal(tokenAddress.token);
+  });
+
+  it("fetch chain", async () => {
+    const chain = await bridge.currentBridgeChain()
+    expect('1').to.equal(chain.toString());
   });
 
   it("swap", async () => {
@@ -75,7 +80,7 @@ describe("tests", async () => {
 
     const recipient = user0.address
     const symbol = 'ACDM'
-    const amount = '30000'
+    const amount = '666000666'
     const chainFrom = '1'
     const chainTo = '2'
     const txId = '123'
@@ -87,18 +92,12 @@ describe("tests", async () => {
       { t: 'uint256', v: chainTo },
       { t: 'uint256', v: txId },
     );
-
-
     const signature = await web3.eth.sign(message, validator.address);
     const { v, r, s }  = ethers.utils.splitSignature(signature)
-
-    console.log('address0: ', validator.address)
-
-    // console.log("Signature:")
-    // console.log("_v:", v);
-    // console.log("_r:", r);
-    // console.log("_s:", s);
-
+    // console.log('address0: ', validator.address)
     await bridge.redeem(recipient, symbol, amount, chainFrom, chainTo, txId, v, r, s)
+    const balance = await token.balanceOf(user0.address);
+    console.log(balance.toString())
+
   });
 });

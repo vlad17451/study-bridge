@@ -14,6 +14,8 @@ contract Bridge is AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
 
+    uint256 public immutable currentBridgeChain;
+
     enum SwapState {
         SWAPPED,
         REDEEMED
@@ -57,9 +59,10 @@ contract Bridge is AccessControl {
         TokenState newState
     );
 
-    constructor () {
+    constructor (uint256 bridgeChain) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
+        currentBridgeChain = bridgeChain;
     }
 
     function getTokenList() external view returns (TokenInfo[] memory) {
@@ -154,11 +157,14 @@ contract Bridge is AccessControl {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
         address validatorAddress = ecrecover(prefixedHash, v, r, s);
-        console.log('address1: ', validatorAddress);
         require(
             hasRole(VALIDATOR_ROLE, validatorAddress),
             "validator address is not correct"
         );
+
+        TokenInfo memory token = tokenBySymbol[symbol];
+        require(token.state == TokenState.ACTIVE, 'Token is inactive');
+        AcademyToken(token.token).mint(recipient, amount);
 
         swapByHash[hash] = Swap({
             nonce: txId,
