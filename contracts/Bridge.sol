@@ -11,24 +11,19 @@ contract Bridge is AccessControl {
     using SafeERC20 for IERC20;
     using SafeERC20 for AcademyToken;
 
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
-
-    uint256 public immutable currentBridgeChain;
-
     enum SwapState {
         SWAPPED,
         REDEEMED
     }
 
-    struct Swap {
-        uint256 nonce;
-        SwapState state;
-    }
-
     enum TokenState {
         ACTIVE,
         INACTIVE
+    }
+
+    struct Swap {
+        uint256 nonce;
+        SwapState state;
     }
 
     struct TokenInfo {
@@ -37,9 +32,15 @@ contract Bridge is AccessControl {
         TokenState state;
     }
 
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
+
+    uint256 public immutable currentBridgeChainId;
+
     mapping(string => TokenInfo) public tokenBySymbol;
-    string[] tokenSymbols;
+    mapping(uint256 => bool) public isChainActiveById;
     mapping(bytes32 => Swap) public swapByHash;
+    string[] tokenSymbols;
 
     event SwapInitialized(
         uint256 indexed initTimestamp,
@@ -52,6 +53,12 @@ contract Bridge is AccessControl {
         uint256 txId
     );
 
+    event SwapRedeemed(
+        uint256 indexed initTimestamp,
+        address indexed initiator,
+        uint256 indexed txId
+    );
+
     event TokenStateChanged(
         address indexed initiator,
         address indexed token,
@@ -59,10 +66,18 @@ contract Bridge is AccessControl {
         TokenState newState
     );
 
-    constructor (uint256 bridgeChain) {
+    constructor (uint256 bridgeChainId) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
-        currentBridgeChain = bridgeChain;
+        currentBridgeChainId = bridgeChainId;
+    }
+
+    function updateChainById(uint256 chainId, bool isActive) external {
+        require(
+            hasRole(ADMIN_ROLE, msg.sender),
+            "Bridge: You should have a admin role"
+        );
+        isChainActiveById[chainId] = isActive;
     }
 
     function getTokenList() external view returns (TokenInfo[] memory) {
@@ -74,7 +89,10 @@ contract Bridge is AccessControl {
     }
 
     function addToken(string memory symbol, address tokenAddress) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
+        require(
+            hasRole(ADMIN_ROLE, msg.sender),
+            "Bridge: You should have a admin role"
+        );
         tokenBySymbol[symbol] = TokenInfo({
             token: tokenAddress,
             symbol: symbol,
@@ -84,14 +102,20 @@ contract Bridge is AccessControl {
     }
 
     function deactivateTokenBySymbol(string memory symbol) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
+        require(
+            hasRole(ADMIN_ROLE, msg.sender),
+            "Bridge: You should have a admin role"
+        );
         TokenInfo storage token = tokenBySymbol[symbol];
         token.state = TokenState.INACTIVE;
         emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
     }
 
     function activateTokenBySymbol(string memory symbol) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "You should have a admin role");
+        require(
+            hasRole(ADMIN_ROLE, msg.sender),
+            "Bridge: You should have a admin role"
+        );
         TokenInfo storage token = tokenBySymbol[symbol];
         token.state = TokenState.ACTIVE;
         emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
@@ -105,20 +129,38 @@ contract Bridge is AccessControl {
         uint256 chainTo,
         uint256 txId
     ) external {
+
+        require(
+            chainFrom == currentBridgeChainId,
+            "Bridge: Invalid chainFrom"
+        );
+        require(
+            chainTo != currentBridgeChainId,
+            "Bridge: Invalid chainTo is same with current bridge chain"
+        );
+        require(
+            isChainActiveById[chainTo],
+            "Bridge: chainTo does not exist/is not active"
+        );
+
+
         TokenInfo memory token = tokenBySymbol[symbol];
-        require(token.state == TokenState.ACTIVE, 'Token is inactive');
+        require(
+            token.state == TokenState.ACTIVE,
+            "Bridge: Token is inactive"
+        );
         AcademyToken(token.token).burn(msg.sender, amount);
         bytes32 hash = keccak256(abi.encodePacked(
-            recipient,
-            amount,
-            symbol,
-            chainFrom,
-            chainTo,
-            txId
-        ));
+                recipient,
+                amount,
+                symbol,
+                chainFrom,
+                chainTo,
+                txId
+            ));
         swapByHash[hash] = Swap({
-            nonce: txId,
-            state: SwapState.SWAPPED
+        nonce: txId,
+        state: SwapState.SWAPPED
         });
         emit SwapInitialized(
             block.timestamp,
@@ -159,16 +201,25 @@ contract Bridge is AccessControl {
         address validatorAddress = ecrecover(prefixedHash, v, r, s);
         require(
             hasRole(VALIDATOR_ROLE, validatorAddress),
-            "validator address is not correct"
+            "Bridge: Validator address is not correct"
         );
 
         TokenInfo memory token = tokenBySymbol[symbol];
-        require(token.state == TokenState.ACTIVE, 'Token is inactive');
+        require(
+            token.state == TokenState.ACTIVE,
+            "Bridge: Token is inactive"
+        );
         AcademyToken(token.token).mint(recipient, amount);
 
         swapByHash[hash] = Swap({
             nonce: txId,
             state: SwapState.REDEEMED
         });
+
+        emit SwapRedeemed(
+            block.timestamp,
+            msg.sender,
+            txId
+        );
     }
 }

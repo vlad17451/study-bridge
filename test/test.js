@@ -51,8 +51,14 @@ describe("tests", async () => {
   });
 
   it("fetch chain", async () => {
-    const chain = await bridge.currentBridgeChain()
+    const chain = await bridge.currentBridgeChainId()
     expect('1').to.equal(chain.toString());
+  });
+
+  it("addChain", async () => {
+    await bridge.updateChainById('2', true)
+    const isChainActive = await bridge.isChainActiveById('2')
+    expect(true).to.equal(isChainActive);
   });
 
   it("swap", async () => {
@@ -60,7 +66,7 @@ describe("tests", async () => {
     const amount = '1000'
     let balance1 = await token.balanceOf(owner.address);
     const expectedBalance = new BigNumber(balance1.toString()).minus(amount).toString()
-    await bridge.swap(owner.address, 'ACDM', amount, '0', '1', '0')
+    await bridge.swap(owner.address, 'ACDM', amount, '1', '2', '0')
     let balance2 = await token.balanceOf(owner.address);
     expect(expectedBalance).to.equal(balance2.toString());
   });
@@ -94,10 +100,8 @@ describe("tests", async () => {
     );
     const signature = await web3.eth.sign(message, validator.address);
     const { v, r, s }  = ethers.utils.splitSignature(signature)
-    // console.log('address0: ', validator.address)
     await bridge.redeem(recipient, symbol, amount, chainFrom, chainTo, txId, v, r, s)
     const balance = await token.balanceOf(user0.address);
-    console.log(balance.toString())
-
+    expect('666000666').to.equal(balance.toString());
   });
 });
