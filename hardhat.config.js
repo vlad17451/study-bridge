@@ -1,5 +1,6 @@
 require('dotenv').config();
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 
 module.exports = {
   networks: {
@@ -10,6 +11,11 @@ module.exports = {
       },
       chainId: 4
     }
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: "FJN5Z6K1NU9URU3ANDC3QUDKDE7ZPKTIAB"
   },
   solidity: {
     docker: false,
