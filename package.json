@@ -7,7 +7,6 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "deploy-dev": "hardhat run scripts/deploy.js",
     "deploy-rinkeby": "hardhat run --network rinkeby scripts/deploy.js"
   },
   "dependencies": {
@@ -21,5 +20,8 @@
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.32",
     "hardhat": "^2.0.11"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-etherscan": "^2.1.5"
   }
 }
