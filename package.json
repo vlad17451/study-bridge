@@ -7,7 +7,10 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "deploy-rinkeby": "hardhat run --network rinkeby scripts/deploy.js"
+    "deploy-rinkeby": "hardhat run --network rinkeby scripts/deploy.js",
+    "deploy-bsc-testnet": "hardhat run --network bscTestnet scripts/deploy.js",
+    "deploy-bridge-rinkeby": "hardhat run --network rinkeby scripts/deployBridge.js",
+    "deploy-bridge-bsc-testnet": "hardhat run --network bscTestnet scripts/deployBridge.js"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.2.0",

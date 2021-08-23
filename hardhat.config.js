@@ -10,12 +10,20 @@ module.exports = {
         mnemonic: process.env.MNEMONIC
       },
       chainId: 4
+    },
+    bscTestnet: {
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      chainId: 97,
+      accounts: {
+        mnemonic: process.env.MNEMONIC
+      },
     }
   },
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY
+    // apiKey: process.env.ETHERSCAN_API_KEY, // eth
+    apiKey: process.env.BSCSCAN_API_KEY // bsc
   },
   solidity: {
     docker: false,
