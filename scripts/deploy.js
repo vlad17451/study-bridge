@@ -9,24 +9,23 @@ const delay = async (time) => {
     }, time)
   })
 }
+// npx hardhat verify --network rinkeby "0xf6F42851d674AC70241822F201aF46299329D5F7" "Academy Token" "ACDM"
 
 async function main() {
   require('dotenv').config();
   const Token = await hre.ethers.getContractFactory("AcademyToken");
-  const tokenInst = await Token.deploy("Academy Token", "ACDM");
+  const tokenInst = await Token.deploy("Academy Token 2", "ACDM2");
   await tokenInst.deployed();
   console.log("token address:", tokenInst.address);
 
-  // npx hardhat verify --network rinkeby "0xf6F42851d674AC70241822F201aF46299329D5F7" "Academy Token" "ACDM"
 
-  // await delay(5000);
-  //
-  // // const tokenInst = await Token.attach('0x174A683F9caCDB6Da6B9a6a637204971437bB5FA')
-  //
-  // await tokenInst.mint(
-  //   '0xBC6ae91F55af580B4C0E8c32D7910d00D3dbe54d',
-  //   new BigNumber('10000').shiftedBy(18).toString()
-  // )
+  await delay(10000);
+  // const tokenInst = await Token.attach('0xf6F42851d674AC70241822F201aF46299329D5F7')
+
+  await tokenInst.mint(
+    '0xBC6ae91F55af580B4C0E8c32D7910d00D3dbe54d',
+    new BigNumber('10111').shiftedBy(18).toString()
+  )
 
 }
 
