@@ -9,7 +9,6 @@ const delay = async (time) => {
     }, time)
   })
 }
-// npx hardhat verify --network rinkeby "0xf6F42851d674AC70241822F201aF46299329D5F7" "Academy Token" "ACDM"
 
 async function main() {
   require('dotenv').config();
@@ -18,9 +17,9 @@ async function main() {
   await tokenInst.deployed();
   console.log("token address:", tokenInst.address);
 
-
   await delay(10000);
-  // const tokenInst = await Token.attach('0xf6F42851d674AC70241822F201aF46299329D5F7')
+
+  // const tokenInst = await Token.attach('')
 
   await tokenInst.mint(
     '0xBC6ae91F55af580B4C0E8c32D7910d00D3dbe54d',

@@ -9,7 +9,6 @@ const delay = async (time) => {
     }, time)
   })
 }
-// npx hardhat verify --network rinkeby "0x4e083Ebfe687794d75D253BDe40a8381e61730B0" "4"
 
 async function main() {
   require('dotenv').config();
@@ -24,7 +23,7 @@ async function main() {
   const VALIDATOR_ROLE = await bridge.VALIDATOR_ROLE()
   await bridge.grantRole(VALIDATOR_ROLE, '0xBC6ae91F55af580B4C0E8c32D7910d00D3dbe54d')
 
-  // const bridge = await Bridge.attach('0x4e083Ebfe687794d75D253BDe40a8381e61730B0')
+  // const bridge = await Bridge.attach('')
 
   await bridge.updateChainById('4', true)
 
@@ -48,11 +47,8 @@ async function main() {
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i]
 
-    console.log(bridge.address)
     await token.grantRole(MINTER_ROLE, bridge.address)
-    console.log(1)
     await token.grantRole(BURNER_ROLE, bridge.address)
-    console.log(2)
     const symbol = await token.symbol()
     await bridge.addToken(symbol, token.address)
     await delay(2000);

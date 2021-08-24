@@ -25,6 +25,7 @@
     "hardhat": "^2.0.11"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-etherscan": "^2.1.5"
+    "@nomiclabs/hardhat-etherscan": "^2.1.5",
+    "hardhat-docgen": "^1.1.1"
   }
 }

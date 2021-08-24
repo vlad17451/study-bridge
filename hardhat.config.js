@@ -1,8 +1,14 @@
 require('dotenv').config();
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
+require('hardhat-docgen');
 
 module.exports = {
+  docgen: {
+    path: './doc',
+    clear: true,
+    runOnCompile: true,
+  },
   networks: {
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -20,10 +26,7 @@ module.exports = {
     }
   },
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    // apiKey: "FJN5Z6K1NU9URU3ANDC3QUDKDE7ZPKTIAB", // eth
-    apiKey: "N4R6CJ9JM1U2PGJ7MWDUXYYJFUYJYNACH8" // bsc
+    apiKey: process.env.SCAN_API_KEY
   },
   solidity: {
     docker: false,
