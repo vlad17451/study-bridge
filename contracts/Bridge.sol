@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./AcademyToken.sol";
 import "hardhat/console.sol";
 
+/// @notice Bridge to swap tokens between several blockchain by create vrs by validator
+/// @dev instance of this bridge must exist on all networks between which you want to swap
 contract Bridge is AccessControl {
     using SafeERC20 for IERC20;
     using SafeERC20 for AcademyToken;
