@@ -7,7 +7,7 @@ module.exports = {
   docgen: {
     path: './doc',
     clear: true,
-    runOnCompile: true,
+    // runOnCompile: true,
   },
   networks: {
     rinkeby: {
