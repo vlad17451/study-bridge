@@ -47,7 +47,7 @@ describe("tests", async () => {
     await bridge.addToken('ACDM', token.address);
     await bridge.addToken('ACDM2', token1.address);
     const tokenAddress = await bridge.tokenBySymbol('ACDM');
-    expect(token.address).to.equal(tokenAddress.token);
+    expect(token.address).to.equal(tokenAddress.tokenAddress);
   });
 
   it("fetch chain", async () => {

@@ -28,7 +28,7 @@ contract Bridge is AccessControl {
     }
 
     struct TokenInfo {
-        address token;
+        address tokenAddress;
         string symbol;
         TokenState state;
     }
@@ -67,12 +67,24 @@ contract Bridge is AccessControl {
         TokenState newState
     );
 
+
+    /**
+      * @notice constructor
+      * @dev use real id of blockchain, for example 4 for rinkeby, 97 for bsc testnet etc
+      * @param bridgeChainId - id current blockchain
+      */
     constructor (uint256 bridgeChainId) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
         currentBridgeChainId = bridgeChainId;
     }
 
+    /**
+      * @notice add or update chain to chain map, activate or deactivate chain by id
+      * @dev use real id of blockchain in map, for example 4 for rinkeby, 97 for bsc testnet etc
+      * @param chainId - id of blockchain to update
+      * @param isActive - new state of chain
+      */
     function updateChainById(uint256 chainId, bool isActive) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
@@ -81,6 +93,10 @@ contract Bridge is AccessControl {
         isChainActiveById[chainId] = isActive;
     }
 
+    /**
+      * @notice get token list, which have addresses, symbols and state of all tokens
+      * @return TokenInfo[] - array of structs of tokens, which have tokenAddress, symbol and state
+      */
     function getTokenList() external view returns (TokenInfo[] memory) {
         TokenInfo[] memory tokens = new TokenInfo[](tokenSymbols.length);
         for (uint i = 0; i < tokenSymbols.length; i++) {
@@ -89,19 +105,30 @@ contract Bridge is AccessControl {
         return tokens;
     }
 
+    /**
+      * @notice add token which can be swapped
+      * @dev you should have admin role to execute this method
+      * @param symbol - symbol of token which you want to add
+      * @param tokenAddress - address of token which you want to add
+      */
     function addToken(string memory symbol, address tokenAddress) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
             "Bridge: You should have a admin role"
         );
         tokenBySymbol[symbol] = TokenInfo({
-            token: tokenAddress,
+            tokenAddress: tokenAddress,
             symbol: symbol,
             state: TokenState.ACTIVE
         });
         tokenSymbols.push(symbol);
     }
 
+    /**
+      * @notice deactivate token to swap, you can swap only tokens which active
+      * @dev you should have admin role to execute this method
+      * @param symbol - symbol of token which you want to deactivate
+      */
     function deactivateTokenBySymbol(string memory symbol) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
@@ -109,9 +136,14 @@ contract Bridge is AccessControl {
         );
         TokenInfo storage token = tokenBySymbol[symbol];
         token.state = TokenState.INACTIVE;
-        emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
+        emit TokenStateChanged(msg.sender, token.tokenAddress, symbol, token.state);
     }
 
+    /**
+      * @notice activate token to swap, you can swap only tokens which active
+      * @dev you should have admin role to execute this method
+      * @param symbol - symbol of token which you want to activate
+      */
     function activateTokenBySymbol(string memory symbol) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
@@ -119,9 +151,19 @@ contract Bridge is AccessControl {
         );
         TokenInfo storage token = tokenBySymbol[symbol];
         token.state = TokenState.ACTIVE;
-        emit TokenStateChanged(msg.sender, token.token, symbol, token.state);
+        emit TokenStateChanged(msg.sender, token.tokenAddress, symbol, token.state);
     }
 
+    /**
+      * @notice init swap and create event
+      * @dev you can get arguments for redeem from event of swap
+      * @param recipient - The address of recipient of tokens in target chain
+      * @param symbol - The symbol of swap token
+      * @param amount - amount of tokens
+      * @param chainFrom - chain id where tokens swap from
+      * @param chainTo - chain id where tokens swap to
+      * @param txId - unique id of swap
+      */
     function swap(
         address recipient,
         string memory symbol,
@@ -150,7 +192,7 @@ contract Bridge is AccessControl {
             token.state == TokenState.ACTIVE,
             "Bridge: Token is inactive"
         );
-        AcademyToken(token.token).burn(msg.sender, amount);
+        AcademyToken(token.tokenAddress).burn(msg.sender, amount);
         bytes32 hash = keccak256(abi.encodePacked(
                 recipient,
                 amount,
@@ -182,6 +224,20 @@ contract Bridge is AccessControl {
         );
     }
 
+
+    /**
+      * @notice you get tokens if you have vrs
+      * @dev all arguments except v, r and s, comes from swap event
+      * @param recipient - The address of recipient of tokens in target chain
+      * @param symbol - The symbol of swap token
+      * @param amount - amount of tokens
+      * @param chainFrom - chain id where tokens swap from
+      * @param chainTo - chain id where tokens swap to
+      * @param txId - unique id of swap
+      * @param v - v of signature
+      * @param r - r of signature
+      * @param s - s of signature
+      */
     function redeem(
         address recipient,
         string memory symbol,
@@ -193,7 +249,6 @@ contract Bridge is AccessControl {
         bytes32 r,
         bytes32 s
     ) external {
-
         bytes32 hash = keccak256(
             abi.encodePacked(
                 recipient,
@@ -217,7 +272,7 @@ contract Bridge is AccessControl {
             token.state == TokenState.ACTIVE,
             "Bridge: Token is inactive"
         );
-        AcademyToken(token.token).mint(recipient, amount);
+        AcademyToken(token.tokenAddress).mint(recipient, amount);
 
         require(
           swapByHash[hash].state == SwapState.EMPTY,
