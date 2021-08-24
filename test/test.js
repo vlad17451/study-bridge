@@ -71,6 +71,20 @@ describe("tests", async () => {
     expect(expectedBalance).to.equal(balance2.toString());
   });
 
+  it("swap again", async () => {
+    try {
+      await token.approve(bridge.address, '1000000');
+      const amount = '1000'
+      let balance1 = await token.balanceOf(owner.address);
+      const expectedBalance = new BigNumber(balance1.toString()).minus(amount).toString()
+      await bridge.swap(owner.address, 'ACDM', amount, '1', '2', '0')
+      let balance2 = await token.balanceOf(owner.address);
+      expect(expectedBalance).to.equal(balance2.toString());
+    } catch (e) {
+      expect(e.message).to.include("Bridge: Swap with given params already exists");
+    }
+  });
+
   it("fetch token list", async () => {
     const tokenList = await bridge.getTokenList()
     expect('ACDM2').to.equal(tokenList[1].symbol);
@@ -103,5 +117,32 @@ describe("tests", async () => {
     await bridge.redeem(recipient, symbol, amount, chainFrom, chainTo, txId, v, r, s)
     const balance = await token.balanceOf(user0.address);
     expect('666000666').to.equal(balance.toString());
+  });
+
+  it("redeem again", async () => {
+    try {
+      const recipient = user0.address
+      const symbol = 'ACDM'
+      const amount = '666000666'
+      const chainFrom = '1'
+      const chainTo = '2'
+      const txId = '123'
+      const message = web3.utils.soliditySha3(
+        { t: 'address', v: recipient },
+        { t: 'string', v: symbol },
+        { t: 'uint256', v: amount },
+        { t: 'uint256', v: chainFrom },
+        { t: 'uint256', v: chainTo },
+        { t: 'uint256', v: txId },
+      );
+      const signature = await web3.eth.sign(message, validator.address);
+      const { v, r, s }  = ethers.utils.splitSignature(signature)
+      await bridge.redeem(recipient, symbol, amount, chainFrom, chainTo, txId, v, r, s)
+      // const balance = await token.balanceOf(user0.address);
+      // expect('666000666').to.equal(balance.toString());
+    } catch (e) {
+      // console.log(e)
+      expect(e.message).to.include("Bridge: Redeem with given params already exists");
+    }
   });
 });

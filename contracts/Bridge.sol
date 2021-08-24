@@ -12,6 +12,7 @@ contract Bridge is AccessControl {
     using SafeERC20 for AcademyToken;
 
     enum SwapState {
+        EMPTY,
         SWAPPED,
         REDEEMED
     }
@@ -158,10 +159,17 @@ contract Bridge is AccessControl {
                 chainTo,
                 txId
             ));
+
+        require(
+          swapByHash[hash].state == SwapState.EMPTY,
+          "Bridge: Swap with given params already exists"
+        );
+
         swapByHash[hash] = Swap({
-        nonce: txId,
-        state: SwapState.SWAPPED
+          nonce: txId,
+          state: SwapState.SWAPPED
         });
+
         emit SwapInitialized(
             block.timestamp,
             msg.sender,
@@ -210,6 +218,11 @@ contract Bridge is AccessControl {
             "Bridge: Token is inactive"
         );
         AcademyToken(token.token).mint(recipient, amount);
+
+        require(
+          swapByHash[hash].state == SwapState.EMPTY,
+          "Bridge: Redeem with given params already exists"
+        );
 
         swapByHash[hash] = Swap({
             nonce: txId,
