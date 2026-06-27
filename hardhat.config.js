@@ -1,7 +1,10 @@
 require('dotenv').config();
 require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
 require('hardhat-docgen');
+
+const accounts = process.env.MNEMONIC
+  ? { mnemonic: process.env.MNEMONIC }
+  : undefined;
 
 module.exports = {
   docgen: {
@@ -10,27 +13,18 @@ module.exports = {
     // runOnCompile: true,
   },
   networks: {
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: {
-        mnemonic: process.env.MNEMONIC
-      },
-      chainId: 4
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts,
+      chainId: 11155111
     },
     bscTestnet: {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       chainId: 97,
-      accounts: {
-        mnemonic: process.env.MNEMONIC
-      },
+      accounts,
     }
   },
-  etherscan: {
-    apiKey: process.env.SCAN_API_KEY
-  },
   solidity: {
-    docker: false,
-    parser: 'solcjs',
     settings: {
       optimizer: {
         enabled: true,
@@ -53,4 +47,3 @@ module.exports = {
     timeout: 20000
   }
 }
-

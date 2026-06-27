@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./AcademyToken.sol";
-import "hardhat/console.sol";
 
 /**
   * @notice Bridge to swap tokens between several blockchain by create vrs by validator
@@ -49,28 +48,21 @@ contract Bridge is AccessControl {
 
     /**
       * @notice get token structure by symbol
-      * @param symbol - symbol of token
-      * @return TokenInfo - token structure
       */
     mapping(string => TokenInfo) public tokenBySymbol;
 
     /**
       * @notice get boolean of chain state by id
-      * @param id - id of chain
-      * @return state - state of chain
       */
     mapping(uint256 => bool) public isChainActiveById;
 
     /**
       * @notice get swap structure by hash
-      * @param hash - hash of all params of swap
-      * @return Swap - structure of swap
       */
     mapping(bytes32 => Swap) public swapByHash;
 
     /**
       * @notice array with all token symbols
-      * @return array of symbols
       */
     string[] public tokenSymbols;
 
@@ -129,7 +121,7 @@ contract Bridge is AccessControl {
       * @dev use real id of blockchain, for example 4 for rinkeby, 97 for bsc testnet etc
       * @param bridgeChainId - id current blockchain
       */
-    constructor (uint256 bridgeChainId) payable {
+    constructor (uint256 bridgeChainId) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
         currentChainId = bridgeChainId;
@@ -141,7 +133,7 @@ contract Bridge is AccessControl {
       * @param chainId - id of blockchain to update
       * @param isActive - new state of chain
       */
-    function updateChainById(uint256 chainId, bool isActive) external payable {
+    function updateChainById(uint256 chainId, bool isActive) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
             "Bridge: You should have a admin role"
@@ -167,10 +159,14 @@ contract Bridge is AccessControl {
       * @param symbol - symbol of token which you want to add
       * @param tokenAddress - address of token which you want to add
       */
-    function addToken(string memory symbol, address tokenAddress) external payable {
+    function addToken(string memory symbol, address tokenAddress) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
             "Bridge: You should have a admin role"
+        );
+        require(
+            tokenBySymbol[symbol].state == TokenState.EMPTY,
+            "Bridge: Token with given symbol already exists"
         );
         tokenBySymbol[symbol] = TokenInfo({
             tokenAddress: tokenAddress,
@@ -185,7 +181,7 @@ contract Bridge is AccessControl {
       * @dev you should have admin role to execute this method
       * @param symbol - symbol of token which you want to deactivate
       */
-    function deactivateTokenBySymbol(string memory symbol) external payable {
+    function deactivateTokenBySymbol(string memory symbol) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
             "Bridge: You should have a admin role"
@@ -200,7 +196,7 @@ contract Bridge is AccessControl {
       * @dev you should have admin role to execute this method
       * @param symbol - symbol of token which you want to activate
       */
-    function activateTokenBySymbol(string memory symbol) external payable {
+    function activateTokenBySymbol(string memory symbol) external {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
             "Bridge: You should have a admin role"
@@ -227,7 +223,7 @@ contract Bridge is AccessControl {
         uint256 chainFrom,
         uint256 chainTo,
         uint256 txId
-    ) external payable {
+    ) external {
 
         require(
             chainFrom == currentChainId,
@@ -251,11 +247,12 @@ contract Bridge is AccessControl {
         AcademyToken(token.tokenAddress).burn(msg.sender, amount);
         bytes32 hash = keccak256(abi.encodePacked(
                 recipient,
-                amount,
                 symbol,
+                amount,
                 chainFrom,
                 chainTo,
-                txId
+                txId,
+                address(this)
             ));
 
         require(
@@ -304,7 +301,11 @@ contract Bridge is AccessControl {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external payable {
+    ) external {
+        require(
+            chainTo == currentChainId,
+            "Bridge: Invalid chainTo is not current bridge chain"
+        );
         bytes32 hash = keccak256(
             abi.encodePacked(
                 recipient,
@@ -312,23 +313,21 @@ contract Bridge is AccessControl {
                 amount,
                 chainFrom,
                 chainTo,
-                txId
+                txId,
+                address(this)
             )
         );
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
         address validatorAddress = ecrecover(prefixedHash, v, r, s);
         require(
+            validatorAddress != address(0),
+            "Bridge: Invalid signature"
+        );
+        require(
             hasRole(VALIDATOR_ROLE, validatorAddress),
             "Bridge: Validator address is not correct"
         );
-
-        TokenInfo memory token = tokenBySymbol[symbol];
-        require(
-            token.state == TokenState.ACTIVE,
-            "Bridge: Token is inactive"
-        );
-        AcademyToken(token.tokenAddress).mint(recipient, amount);
 
         require(
           swapByHash[hash].state == SwapState.EMPTY,
@@ -339,6 +338,13 @@ contract Bridge is AccessControl {
             nonce: txId,
             state: SwapState.REDEEMED
         });
+
+        TokenInfo memory token = tokenBySymbol[symbol];
+        require(
+            token.state == TokenState.ACTIVE,
+            "Bridge: Token is inactive"
+        );
+        AcademyToken(token.tokenAddress).mint(recipient, amount);
 
         emit SwapRedeemed(
             block.timestamp,
