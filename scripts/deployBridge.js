@@ -4,7 +4,7 @@ BigNumber.config({ EXPONENTIAL_AT: 60 });
 
 const delay = async (time) => {
   return new Promise((resolve) => {
-    setInterval(() => {
+    setTimeout(() => {
       resolve()
     }, time)
   })
@@ -23,9 +23,7 @@ async function main() {
   const VALIDATOR_ROLE = await bridge.VALIDATOR_ROLE()
   await bridge.grantRole(VALIDATOR_ROLE, '0xBC6ae91F55af580B4C0E8c32D7910d00D3dbe54d')
 
-  // const bridge = await Bridge.attach('')
-
-  await bridge.updateChainById('4', true)
+  await bridge.updateChainById('11155111', true)
 
   const tokenAddresses = [
     '0x9995E70932A746B0e37c3b2892124B4F868655Ca', // ACDM
